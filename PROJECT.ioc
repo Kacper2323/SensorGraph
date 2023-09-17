@@ -2,7 +2,8 @@
 ADC1.Channel-0\#ChannelRegularConversion=ADC_CHANNEL_1
 ADC1.CommonPathInternal=null|null|null|null
 ADC1.ContinuousConvMode=ENABLE
-ADC1.IPParameters=master,Channel-0\#ChannelRegularConversion,SamplingTime-0\#ChannelRegularConversion,OffsetNumber-0\#ChannelRegularConversion,NbrOfConversionFlag,ContinuousConvMode,Overrun,CommonPathInternal
+ADC1.IPParameters=master,Channel-0\#ChannelRegularConversion,SamplingTime-0\#ChannelRegularConversion,OffsetNumber-0\#ChannelRegularConversion,NbrOfConversionFlag,ContinuousConvMode,Overrun,NbrOfConversion,CommonPathInternal
+ADC1.NbrOfConversion=1
 ADC1.NbrOfConversionFlag=1
 ADC1.OffsetNumber-0\#ChannelRegularConversion=ADC_OFFSET_NONE
 ADC1.Overrun=ADC_OVR_DATA_OVERWRITTEN
@@ -12,6 +13,7 @@ CAD.formats=
 CAD.pinconfig=
 CAD.provider=
 File.Version=6
+GPIO.groupedBy=Group By Peripherals
 KeepUserPlacement=false
 Mcu.CPN=STM32L475RGT6
 Mcu.Family=STM32L4

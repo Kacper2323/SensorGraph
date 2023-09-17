@@ -28,6 +28,8 @@
 #define ST7735S_VMCTR1			0xc5
 #define ST7735S_GAMCTRP1		0xe0
 #define ST7735S_GAMCTRN1		0xe1
+#define ST7735S_INVON			0x21
+#define ST7735S_INVOFF			0x20
 
 #define CMD(x) ((x) | 0x100)
 
@@ -36,6 +38,11 @@ static void lcd_data(uint8_t val){
 	HAL_GPIO_WritePin(LCD_CS_GPIO_Port, LCD_CS_Pin, 0);
 	HAL_SPI_Transmit(&hspi1, &val, 1, HAL_MAX_DELAY);
 	HAL_GPIO_WritePin(LCD_CS_GPIO_Port, LCD_CS_Pin, 1);
+}
+
+static void lcd_data16(uint16_t val){
+	lcd_data(val >> 8);
+	lcd_data(val);
 }
 
 static void lcd_cmd(uint8_t val){
@@ -72,7 +79,8 @@ static const uint16_t init_table[] = {
   CMD(0xf0), 0x01,
   CMD(0xf6), 0x00,
   CMD(ST7735S_COLMOD), 0x05,
-  CMD(ST7735S_MADCTL), 0xa0,
+  CMD(ST7735S_MADCTL), 0x20,
+  CMD(ST7735S_INVON),
 };
 
 void lcd_init(void){
@@ -90,4 +98,38 @@ void lcd_init(void){
 	lcd_cmd(ST7735S_SLPOUT);
 	HAL_Delay(120);
 	lcd_cmd(ST7735S_DISPON);
+}
+
+#define X_OFFSET 1
+#define Y_OFFSET 2
+
+static void lcd_set_window(uint16_t x, uint16_t y, uint16_t width, uint16_t height){
+	lcd_cmd(ST7735S_CASET);
+	lcd_data16(X_OFFSET + x);
+	lcd_data16(X_OFFSET + x + width -1);
+
+	lcd_cmd(ST7735S_RASET);
+	lcd_data16(Y_OFFSET + y);
+	lcd_data16(Y_OFFSET + y + height -1);
+}
+
+void lcd_box_fill(int x, int y, int width, int height, uint16_t color){
+	int i;
+
+	lcd_set_window(x, y, width, height);
+
+	lcd_cmd(ST7735S_RAMWR);
+	for(i=0; i < width * height; i++){
+		lcd_data16(color);
+	}
+}
+
+void lcd_set_column(int x, uint8_t *data){
+	lcd_set_window(x, 0, 1, 128);
+
+	lcd_cmd(ST7735S_RAMWR);
+	HAL_GPIO_WritePin(LCD_DC_GPIO_Port, LCD_DC_Pin, 1);
+	HAL_GPIO_WritePin(LCD_CS_GPIO_Port, LCD_CS_Pin, 0);
+	HAL_SPI_Transmit(&hspi1, (uint8_t*)data, 256, HAL_MAX_DELAY);
+	HAL_GPIO_WritePin(LCD_CS_GPIO_Port, LCD_CS_Pin, 1);
 }

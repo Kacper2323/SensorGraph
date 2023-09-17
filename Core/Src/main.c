@@ -36,7 +36,7 @@
 
 /* Private define ------------------------------------------------------------*/
 /* USER CODE BEGIN PD */
-
+#define ADC_SRES_RATIO (4096/128)
 /* USER CODE END PD */
 
 /* Private macro -------------------------------------------------------------*/
@@ -47,7 +47,8 @@
 /* Private variables ---------------------------------------------------------*/
 
 /* USER CODE BEGIN PV */
-
+extern char systick_flag;
+extern int systick_cnt_set_ms;
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -58,7 +59,17 @@ void SystemClock_Config(void);
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
+void set_buff_h(int pixel, int prev, uint8_t* buffer, int buffer_size){
 
+	int i;
+	for(i=0; i<buffer_size; i++){
+		if( (i>=2*prev && i<=(2*pixel)+1) || (i>=2*pixel && i<=(2*prev)+1) ){
+			buffer[i] = 0xff;
+		}
+		else
+			buffer[i] = 0x00;
+	}
+}
 /* USER CODE END 0 */
 
 /**
@@ -98,17 +109,35 @@ int main(void)
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
+
   lcd_init();
   HAL_ADCEx_Calibration_Start(&hadc1, ADC_SINGLE_ENDED);
   HAL_ADC_Start(&hadc1);
+  systick_cnt_set_ms = 50;
+
+  uint8_t lcd_buffer[COLUMN_DATA] = {0};	//{ [ 0 ... 255 ] = 0xff } without inverted colors;
   uint16_t value;
-  char s[64];
+  uint16_t prev_lcd_val = HAL_ADC_GetValue(&hadc1) / ADC_SRES_RATIO;
+  int column_nr = 0;
+
+  lcd_box_fill(0, 0, 160, 128, WHITE);
+
   while (1)
   {
-	  value = HAL_ADC_GetValue(&hadc1);
-	  sprintf(s, "%05d\r\n", value);
-	  HAL_UART_Transmit(&huart2, (uint8_t*) &s, 7, HAL_MAX_DELAY);
-	  HAL_Delay(500);
+	  value = HAL_ADC_GetValue(&hadc1) / ADC_SRES_RATIO;
+
+	  if(systick_flag == 1){
+
+		  set_buff_h(value, prev_lcd_val, lcd_buffer, COLUMN_DATA);
+		  prev_lcd_val = value;
+
+		  lcd_set_column(column_nr, lcd_buffer);
+
+		  systick_flag = 0;
+		  column_nr++;
+	  }
+
+	  if(column_nr>=160) column_nr=0;
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */

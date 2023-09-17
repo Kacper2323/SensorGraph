@@ -57,7 +57,8 @@
 /* External variables --------------------------------------------------------*/
 
 /* USER CODE BEGIN EV */
-
+int systick_cnt_set_ms = 100; //rate at which new columns are written [ms]
+char systick_flag = 0; //flag set after [systick_cnt_lcd_ref] time has passed
 /* USER CODE END EV */
 
 /******************************************************************************/
@@ -183,7 +184,12 @@ void PendSV_Handler(void)
 void SysTick_Handler(void)
 {
   /* USER CODE BEGIN SysTick_IRQn 0 */
-
+	static int i = 0;
+	if(i >= systick_cnt_set_ms){
+		systick_flag = 1;
+		i = 0;
+	}
+	i++;
   /* USER CODE END SysTick_IRQn 0 */
   HAL_IncTick();
   /* USER CODE BEGIN SysTick_IRQn 1 */

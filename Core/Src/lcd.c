@@ -7,6 +7,7 @@
 
 #include "lcd.h"
 #include "spi.h"
+#include "font.h"
 
 #define ST7735S_SLPOUT			0x11
 #define ST7735S_DISPOFF			0x28
@@ -124,12 +125,47 @@ void lcd_box_fill(int x, int y, int width, int height, uint16_t color){
 	}
 }
 
-void lcd_set_column(int x, uint8_t *data){
-	lcd_set_window(x, 0, 1, 128);
+void lcd_set_column(int x, int y, int height, uint8_t *data){
+	lcd_set_window(x, y, 1, height);
 
 	lcd_cmd(ST7735S_RAMWR);
 	HAL_GPIO_WritePin(LCD_DC_GPIO_Port, LCD_DC_Pin, 1);
 	HAL_GPIO_WritePin(LCD_CS_GPIO_Port, LCD_CS_Pin, 0);
-	HAL_SPI_Transmit(&hspi1, (uint8_t*)data, 256, HAL_MAX_DELAY);
+	HAL_SPI_Transmit(&hspi1, (uint8_t*)data, height*2, HAL_MAX_DELAY);
+	HAL_GPIO_WritePin(LCD_CS_GPIO_Port, LCD_CS_Pin, 1);
+}
+
+
+static uint8_t font_buffer[FONT_WIDTH * FONT_HEIGHT * 2];
+
+static void load_font_buffer(char symbol){
+	symbol -= 32;	//font to ascii offset
+
+	uint16_t temp;
+    int counter = 0;
+
+    for(int j=0; j<FONT_HEIGHT; j++){
+
+        for(int i=0; i<FONT_WIDTH; i++){
+
+            temp = ( fontData[(int)symbol][i] & (0x1 << (FONT_HEIGHT-j)) );
+            font_buffer[counter] = (uint8_t) (!!temp * 0xff);
+            font_buffer[counter+1] = (uint8_t) (!!temp * 0xff);
+            counter += 2;
+        }
+
+    }
+}
+
+void lcd_print_char(int x, int y, char c){
+
+	load_font_buffer(c);
+
+	lcd_set_window(x, y, FONT_WIDTH, FONT_HEIGHT);
+
+	lcd_cmd(ST7735S_RAMWR);
+	HAL_GPIO_WritePin(LCD_DC_GPIO_Port, LCD_DC_Pin, 1);
+	HAL_GPIO_WritePin(LCD_CS_GPIO_Port, LCD_CS_Pin, 0);
+	HAL_SPI_Transmit(&hspi1, (uint8_t*)font_buffer, FONT_WIDTH*FONT_HEIGHT*2, HAL_MAX_DELAY);
 	HAL_GPIO_WritePin(LCD_CS_GPIO_Port, LCD_CS_Pin, 1);
 }

@@ -184,12 +184,7 @@ void PendSV_Handler(void)
 void SysTick_Handler(void)
 {
   /* USER CODE BEGIN SysTick_IRQn 0 */
-	static int i = 0;
-	if(i >= systick_cnt_set_ms){
-		systick_flag = 1;
-		i = 0;
-	}
-	i++;
+
   /* USER CODE END SysTick_IRQn 0 */
   HAL_IncTick();
   /* USER CODE BEGIN SysTick_IRQn 1 */

@@ -27,6 +27,7 @@
 /* USER CODE BEGIN Includes */
 #include "lcd.h"
 #include <stdio.h>
+#include "SensorGraph.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -36,7 +37,7 @@
 
 /* Private define ------------------------------------------------------------*/
 /* USER CODE BEGIN PD */
-#define ADC_SRES_RATIO (4096/128)
+#define ADC_SRES_RATIO (4096/COLUMN_PIXELS)
 /* USER CODE END PD */
 
 /* Private macro -------------------------------------------------------------*/
@@ -47,8 +48,7 @@
 /* Private variables ---------------------------------------------------------*/
 
 /* USER CODE BEGIN PV */
-extern char systick_flag;
-extern int systick_cnt_set_ms;
+
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -59,17 +59,7 @@ void SystemClock_Config(void);
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
-void set_buff_h(int pixel, int prev, uint8_t* buffer, int buffer_size){
 
-	int i;
-	for(i=0; i<buffer_size; i++){
-		if( (i>=2*prev && i<=(2*pixel)+1) || (i>=2*pixel && i<=(2*prev)+1) ){
-			buffer[i] = 0xff;
-		}
-		else
-			buffer[i] = 0x00;
-	}
-}
 /* USER CODE END 0 */
 
 /**
@@ -104,7 +94,23 @@ int main(void)
   MX_USART2_UART_Init();
   MX_SPI1_Init();
   /* USER CODE BEGIN 2 */
+  graph_handle graph1;
+  graph_handle graph2;
 
+  graph1.graph_start_X = 10;
+  graph1.graph_start_Y = 10;
+  graph1.graph_width = 160-30;
+  graph1.graph_height = 64-15;
+  graph1.column_nr = 0;
+  graph1.border_width = 1;
+
+
+  graph2.graph_start_X = 15;
+  graph2.graph_start_Y = 64+5;
+  graph2.graph_width = 60;
+  graph2.graph_height = 50;
+  graph2.column_nr = 0;
+  graph2.border_width = 1;
   /* USER CODE END 2 */
 
   /* Infinite loop */
@@ -113,31 +119,43 @@ int main(void)
   lcd_init();
   HAL_ADCEx_Calibration_Start(&hadc1, ADC_SINGLE_ENDED);
   HAL_ADC_Start(&hadc1);
-  systick_cnt_set_ms = 50;
-
-  uint8_t lcd_buffer[COLUMN_DATA] = {0};	//{ [ 0 ... 255 ] = 0xff } without inverted colors;
-  uint16_t value;
-  uint16_t prev_lcd_val = HAL_ADC_GetValue(&hadc1) / ADC_SRES_RATIO;
-  int column_nr = 0;
 
   lcd_box_fill(0, 0, 160, 128, WHITE);
+  set_background();
+  uint16_t ADC_value;
 
+  set_graph_window(&graph1);
+  set_graph_window(&graph2);
+
+
+  int i = HAL_GetTick();
+  int j = HAL_GetTick();
   while (1)
   {
-	  value = HAL_ADC_GetValue(&hadc1) / ADC_SRES_RATIO;
+	  ADC_value = HAL_ADC_GetValue(&hadc1);
 
-	  if(systick_flag == 1){
+	  if( (HAL_GetTick()-i > 40) ){
+		  graph(&graph1 ,ADC_value, 4100);
 
-		  set_buff_h(value, prev_lcd_val, lcd_buffer, COLUMN_DATA);
-		  prev_lcd_val = value;
-
-		  lcd_set_column(column_nr, lcd_buffer);
-
-		  systick_flag = 0;
-		  column_nr++;
+		  i = HAL_GetTick();
 	  }
 
-	  if(column_nr>=160) column_nr=0;
+	  if( (HAL_GetTick()-j > 60) ){
+		  graph(&graph2 ,ADC_value, 4100);
+
+		  j = HAL_GetTick();
+	  }
+//	  if( (HAL_GetTick()-j > 1000) ){
+//		  lcd_print_char(140, 100, c);
+//		  j = HAL_GetTick();
+//
+//		  c++;
+//		  if(c>'9') c='0';
+//	  }
+
+	  lcd_print_char(140, 100, '9');
+	  lcd_print_char(120, 100, '1');
+
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
